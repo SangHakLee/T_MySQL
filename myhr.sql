@@ -78,4 +78,32 @@ where dept_no in (select dept_no from dept_emp where emp_no between 100004 and 1
 alter table dept_emp add foreign key(dept_no) references department(dept_no);
 
 
+#부서 번호 100 - 120
+use hr;
+explain
+select * from employees where department_id between 100 and 120;
 
+show indexes from employees;
+
+# King, 부서번호 100
+explain
+select * from employees
+where last_name = 'King' or department_id = 100; # index_merge
+
+
+use myhr;
+explain
+select * from employee order by last_name; # Using filesort
+
+show indexes from employee;
+alter table employee add index(last_name, first_name);
+
+
+use hr;
+explain
+select last_name from employee;
+
+
+use myhr;
+explain
+select * from employee group by gender order by emp_no;

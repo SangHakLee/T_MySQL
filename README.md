@@ -3,6 +3,7 @@
 # Day 1
 
 ## MySQL 개요
+
 ### MySQL 개요
 - 오픈소스 DBMS, 1995.03 첫 버전 발표
 - [LAMP](https://ko.wikipedia.org/wiki/LAMP) 의 중심 요소
@@ -78,7 +79,7 @@ Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 - 하드웨어 성능 튜닝
 - 서버 환경 튜닝
 
-#### SW 레벨
+### SW 레벨
 - 테이블의 구조
 	- 칼럼의 타입이 적절한지 살펴봐야 한다.
 - 인덱스
@@ -88,12 +89,12 @@ Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 - 메모리 캐시량
 	- 캐시 메모리의 사이즈가 적절한지 확인 
 
-#### HW 레벨
+### HW 레벨
 - 디스크 검색 시간
 - 디스크 I/O 속도
 - CPU 사이클
 
-#### 쿼리 최적화
+### 쿼리 최적화
 - DBMS에서 쿼리가 실행되는 구조를 알아야 함
 - 로그 분석을 통해 `느린 쿼리를 찾는 방법`을 알아야 함
 - 프로파일링
@@ -103,7 +104,7 @@ Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 		- ```select @@profilinig;```
 	- 실행 계획 분석 explain
 
-#### 프로파일링
+### 프로파일링
 - 현재  세션에서 퀴리가 실행될 때 리소스 사용량 확인
 - 프로파일 환경 변수 설정
 	- ```set profiling = 1;```
@@ -113,17 +114,20 @@ Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 	- ```show profiles;```
 	- ```show profile for query 4;```
 
-#### 실행 계획
+### 실행 계획
 - 쿼리 실행 과정에서 어떠한 작업의 조합으로 쿼리가 실행되는 지 알려줌
 - 반드시 실행 계획에 따라 수행되지는 않는다.
 - 쿼리문 앞에 ```explain```을 붙인다
 - 5.7 버전부터 `SELECT` 이외 쿼리도 가능
 
-##### 실행 계획 상세 p25
+#### 실행 계획 상세 p25
+
+<br>
 
 ### 강의 내용 
 ./day1.sql
 
+<br>
 
 ```powershell
 # 현재 폴더의 sql 파일을 모두 합쳐 all.sql로 만듬
@@ -137,3 +141,29 @@ mysql -u root -p myhr < all.sql
 ```
 ./myhr.sql
 
+### 실습
+#### 문제
+hr 스키마를 이용하여 `Seattle` 에 근무하는 사원들의 성, 이름, 부서명, 급여, 입사일을 출력하고 실행계획을 설명.
+
+#### 결과 SQL
+```sql
+select e.last_name, e.first_name, d.department_name, e.salary, e.hire_date
+from departments d
+join locations l using(location_id)
+join employees e using(department_id)
+where l.city = 'Seattle';
+```
+#### 실행 계획
+![@기존 실행 계획 | day1-work1-explain](https://cloud.githubusercontent.com/assets/9030565/24394715/0779e696-13d8-11e7-9857-7354d9099750.PNG)
+
+
+- table `l`에 type 이 `ALL` 인 이유는 ```where l.city = 'Seattle'``` 쿼리에 `city` 칼럼이 PK, index 모두 아니기 때문에 Full scan 했기 때문이다.
+- table `d`, `e` 는 type 이 `ref` 인 이유는 join 의 칼럼이 PK, index, unique 중 하나였기 때문이다.
+- Full scan을 방지하려면 locations `city` 칼럼을 index에 추가한다.
+
+#### locations 에 index 생성
+```sql
+create index location_city_idx on locations(city);
+```
+#### index 생성 후 실행 계획
+![@수정 실행 계획 | day1-work1-explain index](https://cloud.githubusercontent.com/assets/9030565/24394734/194622ea-13d8-11e7-8250-0bc27e700dda.PNG)
