@@ -63,7 +63,6 @@ show engines;
 #### ERD 만들기
 Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 
-
 <br>
 
 ## MySQL 성능 향상, 쿼리 최적화, 실행 계획
@@ -167,3 +166,43 @@ create index location_city_idx on locations(city);
 ```
 #### index 생성 후 실행 계획
 ![@수정 실행 계획 | day1-work1-explain index](https://cloud.githubusercontent.com/assets/9030565/24394734/194622ea-13d8-11e7-8250-0bc27e700dda.PNG)
+
+<br>
+
+## Index 이해와 적용 
+
+### Index 개요
+#### 기본 개념
+- SELECT 성능 향상을 위해 생성된 별도 데이터
+- Table 과는 별도로 존재
+- CUD 시 index도 변경
+#### 장점
+- SELECT 빠름
+- 정렬 빠름
+#### 단점
+- Table 이외의 저장공간 필요
+- 데이터 변경시 index 도 변경되서 overhead 
+
+### Index 종류
+#### 알고리즘 분류
+- **B-Tree**
+- R-Tree
+- Hash Index
+- Full-Text Index
+#### 칼럼 분류
+- 단일 컬럼 Index
+- 복합 컬럼 Index
+- 부분 Index
+- 커버링 Index
+
+### B-Tree
+- Root, Branch, Leaf 로 구성
+- 어떠한 데이터도 일정한 시간이 소요
+- 데이터 변경 시 재구성 필요
+
+### MySQL Index
+- `PK`, `Unique`, `Key` 로 구분
+- `InnoDB` 에선 PK 에 따라 클러스터화 됨
+- 보조 Index 는 내부적으로 PK 를 포함하여 생성
+	- index(email) 은 index(email, id) 와 같다.
+	- **PK 로 지정되는 칼럼의 길이가 길어지는 것을 지양할 것**
