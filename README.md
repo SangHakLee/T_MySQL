@@ -124,11 +124,16 @@ Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 ### 강의 내용 
 ./day1.sql
 
+
 ```powershell
 # 현재 폴더의 sql 파일을 모두 합쳐 all.sql로 만듬
 copy *.sql all.sql
 ```
 ```powershell
 # all.sql 을 myhr 스키마에 넣으면서 DB 접속
+# 사전에 myhr 이라는 스키마가 있어야 함
+# worckbench Navigator 에서 오른쪽 클릭으로 생성
 mysql -u root -p myhr < all.sql
 ```
+./myhr.sql
+
