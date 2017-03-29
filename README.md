@@ -366,3 +366,40 @@ select * from some_table;
 - **force index**
 	- index 강제 사용
 	- - ```... from employee force index(name_idx) ...```
+
+### Index 사용불가 Case
+1. `not` 연산자
+2. `is not null` 연산자
+3. 컬럼을 변형하여 비교
+```sql
+# salary 에는 index가 있지만, * 12 때문에 컬럼 변형됨
+explain
+select * from employees where salary*12 >= 120000;
+
+# 해결책 - 컬럼 변형 X, 조건식을 변형!
+explain
+select * from employees where salary >= (120000/12);
+```
+4. 칼럼 타입이 자동 변형되는 경우
+```sql
+create table my_internal(
+	t_no varchar(10) primary key, # PK를 varchar로 
+    t_name varchar(20)
+);
+
+insert into my_internal(t_no, t_name) values(1234, 'hong'); # 자동 형변환
+
+explain select * from my_internal where t_no = 1234; # type: All, index 사용 X, 성능 이슈 야기
+
+explain select * from my_internal where t_no = '1234'; # type: const
+```
+5. 복합 칼럼에서 AND, OR 에 따라
+```sql
+# index 사용 O
+explain
+select * from employees where last_name = 'King' and first_name = 'Steven'; 
+explain
+
+# index 사용 X
+select * from employees where last_name = 'King' or first_name = 'Steven'; 
+```
