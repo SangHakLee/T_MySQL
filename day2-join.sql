@@ -56,3 +56,92 @@ select l.city 도시명, d.department_id 부서, d.department_name 부서명, c.
 from locations l
 left join departments d on l.location_id = d.location_id
 join countries c on l.country_id = c.country_id;
+
+
+select distinct l.city, 
+	ifnull(
+	(select group_concat(department_id) from departments where location_id = l.location_id),
+    '배치부서없음'
+    ) dept_id_list
+from locations l left join departments d on l.location_id = d.location_id;
+
+
+
+# join 알고리즘
+create table my_order(
+	order_id varchar(10) primary key,
+    order_date varchar(8)
+);
+show indexes from my_order;
+
+create table my_order_item(
+	seq int auto_increment primary key,
+    order_id varchar(10),
+    order_item_id varchar(10),
+    order_amount int
+);
+show indexes from my_order_item;
+
+alter table my_order_item add foreign key(order_id) references my_order(order_id);
+
+
+
+explain
+select e.last_name, e.first_name, e.salary, d.department_id, d.department_name 
+from employees e join departments d using(department_id);
+
+explain
+select straight_join e.last_name, e.first_name, e.salary, d.department_id, d.department_name 
+from employees e join departments d using(department_id); # straight_join 조인 순서 변경
+
+explain
+select straight_join e.last_name, e.first_name, e.salary, d.department_id, d.department_name 
+from departments d join employees e using(department_id);
+
+
+SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE REFERENCED_TABLE_NAME = 'departments';
+
+alter table employees drop foreign key employees_departments_department_id;
+
+show indexes from employees;
+
+
+
+use myhr;
+
+#급여이력 조회 emp_no 100004
+#employee, emp_salary
+desc employee;
+desc emp_salary;
+select * from emp_salary where emp_no = 100004;
+show indexes from emp_salary;
+
+explain
+select * from employee e join emp_salary es using(emp_no)
+where e.emp_no = 100004;
+
+alter table emp_salary add primary key(emp_no, from_date);
+alter table emp_salary add foreign key(emp_no) references(emp_no);
+
+
+/*
+100004 ~ 100014 사번의 성, 이름, 입사일, 현재급여 및 현재직급을 출력
+employee 테이블을 먼저 조회
+관련 제약조건 생성
+필요에 따라 index 생성
+실행계획 
+*/
+use myhr;
+#explain
+select straight_join e.emp_no, e.last_name, e.first_name, e.hire_date, es.salary, et.title
+from employee e 
+left join emp_salary es using(emp_no)
+left join emp_title et using(emp_no)
+where e.emp_no between 100004 and 100014
+and es.to_date = (select max(to_date) from emp_salary where emp_no = e.emp_no)
+and et.to_date = (select max(to_date) from emp_salary where emp_no = e.emp_no);
+
+
+

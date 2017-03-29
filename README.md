@@ -68,6 +68,7 @@ show engines;
 
 #### ERD 만들기
 Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
+
 <br>
 
 ## MySQL 성능 향상, 쿼리 최적화, 실행 계획
@@ -216,16 +217,15 @@ where l.city = 'Seattle';
 - table `l`에 type 이 `ALL` 인 이유는 ```where l.city = 'Seattle'``` 쿼리에 `city` 칼럼이 PK, index 모두 아니기 때문에 Full scan 했기 때문이다.
 - table `d`, `e` 는 type 이 `ref` 인 이유는 join 의 칼럼이 PK, index, unique 중 하나였기 때문이다.
 - Full scan을 방지하려면 locations `city` 칼럼을 index에 추가한다.
-<br>
 
 #### locations 에 index 생성
 ```sql
 create index location_city_idx on locations(city);
 ```
-<br>
 
 #### index 생성 후 실행 계획
 ![@수정 실행 계획 | day1-work1-explain index](https://cloud.githubusercontent.com/assets/9030565/24394734/194622ea-13d8-11e7-8250-0bc27e700dda.PNG)
+
 <br>
 
 ## Index 이해와 적용 
@@ -494,6 +494,7 @@ explain
 select id, name, hire_date from t_emp where hire_date = '19930113';
 ```
 ![@'19930113' 으로 조회시 type ref | day2-work1-explain varchar](https://cloud.githubusercontent.com/assets/9030565/24438294/570b3652-1481-11e7-886c-9ad68f53cd03.PNG)
+
 <br>
 
 ### Index 설계
@@ -531,6 +532,7 @@ optimize table employee;
 - optimize 하는 경우
 	- 대용량 데이터를 CUD 한 경우
 	- FULLTEXT index를 CUD 한 경우
+
 <br>
 
 ## Join의 이해와 최적화
@@ -594,4 +596,70 @@ from locations l
 left join departments d on l.location_id = d.location_id
 join countries c on l.country_id = c.country_id;
 ```
+
+<br>
+
+### Join 내부 알고리즘
+- **Nested Loop Join**
+	- 하나의 테이블을 기준으로 순차적으로 join
+- **Sort Merge Join**
+	- 양 테이블의 처리 범위를 access 해서 정렬한 결과를 합쳐서 Join
+	- 배치 작업에 사용
+- **Hash Join**
+	- hash 함수 사용
+- **Block Nested Loop**
+	- v5.6 이상부터 MySQL join 방법
+
+`MySQL(v5.7)`에선 Nested Loop 만 사용
+`Oracle`은 다양한 알고리즘 사용
+
+<br>
+
+### Join 최적화 포인트
+- MySQL 은 Nested Loop 이기 때문에 기준 테이블이 중요하다
+	- 기준 테이블에서 조회되는 데이터양에 따라 연관 테이블의 데이터양이 결정되기 때문에 **기준 테이블(왼쪽)의 데이터양을 줄이는 것이 관건**
+- Outer join 은 지양한다. 꼭 필요한 경우만 쓴다.
+- join 시 조합 경우의 수를 줄이기 위해 복합 칼럼 index를 사용한다
+
+<br>
+
+### 실습
+#### 문제
+100004 ~ 100014 사번의 성, 이름, 입사일, 현재급여 및 현재직급을 출력
+employee 테이블을 먼저 조회
+관련 제약조건 생성
+필요에 따라 index 생성
+실행계획 제출
+
+#### 결과
+```sql
+use myhr;
+#explain
+select straight_join e.emp_no, e.last_name, e.first_name, e.hire_date, es.salary, et.title
+from employee e 
+left join emp_salary es using(emp_no)
+left join emp_title et using(emp_no)
+where e.emp_no between 100004 and 100014
+and es.to_date = (select max(to_date) from emp_salary where emp_no = e.emp_no)
+and et.to_date = (select max(to_date) from emp_salary where emp_no = e.emp_no);
+```
+- where 절에 `'9999-01-01'` 로 비교하면 퇴사자는 나오지 않는다. 퇴사자는 to_date 가  '9999-01-01' 가 아니기 때문에
+- 문제에서 퇴사자에 대한 설명 없이 100004 ~ 100014 에 대한 결과를 요구했기 때문에 다음과 같이 작성했다.
+
+
+![@실행 계획| day2-work2-explain](https://cloud.githubusercontent.com/assets/9030565/24445310/74c31f34-14a4-11e7-9b23-459612ab18e6.PNG)
+
+<br>
+
+## 서브 쿼리 튜닝 및 최적화
+### 서브 쿼리 - 기본 개념
+- **Inline View**
+	- `FROM` 절에 사용된 쿼리
+- **Nested** 서브 쿼리
+	- `WHERE` 절에 사용된 쿼리
+- **Correlated** 서브 쿼리(상호연관)
+	- 서브 쿼리에서 메인 쿼리 참조
+- **Scalar** 서브 쿼리
+	- 하나의 값만을 출력하는 서브 쿼리
+
 
