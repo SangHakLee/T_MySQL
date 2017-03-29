@@ -1,0 +1,7 @@
+select_type,description
+SIMPLE,"단순한 select, union이나 sub query가 없다"
+PRIMARY,제일 외곽의 select(sub query 가 있는 경우)
+DERIVED,from 절 내부의 sub query
+DEPENDENT SUBQUERY,상호 연관된 sub query
+UNION,union 에서 두번째 혹인 나중 select
+SUBQUERY,sub query의 첫 번째 select
