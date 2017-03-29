@@ -33,3 +33,26 @@ select last_name, first_name, salary, hire_date from employees where salary betw
 
 explain
 select last_name, first_name, salary, hire_date from employees where employee_id in (100, 200);
+
+
+
+alter table employees add index(last_name, first_name);
+show indexes from employees;
+
+explain
+select last_name, first_name, salary, hire_date from employees where last_name like 'K%';
+
+explain
+select last_name, first_name, salary, hire_date from employees where last_name = 'King' and first_name like 'K%';
+
+explain
+select last_name, first_name, salary, hire_date from employees where last_name like 'K%' and first_name like 'K%';
+
+
+
+alter table employees add index(last_name, first_name, salary);
+
+explain
+select employee_id, last_name, first_name, salary from employees ignore index(last_name_2);
+
+show indexes from employees;

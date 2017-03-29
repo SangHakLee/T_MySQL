@@ -328,11 +328,41 @@ from employees where last_name like 'K%';
 - 실행 계획  type 이 `index`
 <br>
 
+#### Prefix Index
+- 컬럼의 일부분으로 index 생성
+
+##### 특징
+- index크기 줄임
+- 커버링 index 사용 불가
+- BLOB / TEXT 타입 컬럼 적용
+- **적절한 길이 필요**
+	- `Selectivity`(선택도) 로 길이 판단
+```sql
+alter table emp add index(last_name(4));
+```
+
+##### 자동 생성 칼럼 (v5.7 이상)
+MySQL에는 Oracle의 Function based index 는 없으나, **자동 생성 칼럼**을 이용해 이와 비슷한 효과를 낼 수 있다.
+``` sql
+create table some_table(
+	id varchar(10),
+	sub_id varchar(8) as (substring(id, 1, 8)),
+	index(sub_id)
+);
+
+insert some_table(id) values('sub_id_001');
+
+select * from some_table;
+```
+<br>
 
 ### Index 힌트
 - **use index**
 	- Index 사용
+	- ```... from employee use index(name_idx) ...```
 - **ignore index**
 	- Index 사용 X
+	- - ```... from employee ignore index(name_idx) ...```
 - **force index**
 	- index 강제 사용
+	- - ```... from employee force index(name_idx) ...```
