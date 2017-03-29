@@ -129,7 +129,54 @@ Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 - 쿼리문 앞에 ```explain```을 붙인다
 - 5.7 버전부터 `SELECT` 이외 쿼리도 가능
 
-#### 실행 계획 상세 p25
+#### 실행 계획 상세
+| item | contents |
+|---------------|-------------------------------------------|
+| id | select 번호 |
+| select_type | select 종류 |
+| table | 참조 테이블 명 |
+| type | 조인이나 조회 종류 |
+| possible_keys | 사용가능한 index 목록 |
+| key | 사용된 index |
+| key_len | index 길이 |
+| ref | key 와 함께 사용된 칼럼 혹은 상수 값 |
+| rows | 조회 행 수 |
+| filtered | 조회 예정행 추정비(조회행 수 / 전체행 수) |
+| Extra | 추가 정보 |
+
+#### 실행 계획 select_type
+| select_type | description |
+|--------------------|--------------------------------------------|
+| SIMPLE | 단순한 select union이나 sub query가 없다 |
+| PRIMARY | 제일 외곽의 select(sub query 가 있는 경우) |
+| DERIVED | from 절 내부의 sub query |
+| DEPENDENT SUBQUERY | 상호 연관된 sub query |
+| UNION | union 에서 두번째 혹인 나중 select |
+| SUBQUERY | sub query의 첫 번째 select |
+
+#### 실행 계획 type
+| type | description |
+|-----------------|--------------------------------------------------------------------------------------------|
+| system | table 에 데이터가 1개인 경우 |
+| const | PK 나 Unique key 를 상수와 비교하는 경우. 데이터가 한 개 존재 |
+| eq_ref | 조인에서 PK 혹은 Unique key 가 사용된 경우 |
+| ref | where 에서 사용된 컬럼이 index로 참조되거나 조인에서 PK Unique key 이외 칼럼이 사용된 경우 |
+| ref_or_null | ref 와 동일. Null이 추가되어 사용된 경우 |
+| index_merge | 두개의 index 사용된 경우 |
+| unique_subquery | 서브쿼리에서 in 내부에 PK 가 사용된 경우 |
+| index_subquery | unique_subquery 와 유사. 일반 index 사용된 경우 |
+| range | 범위 스캔 |
+| index | 인덱스를 Full scan. 커버링 index. 테이블 조회 없이 index로만 데이터 가져온 경우 |
+| all | 테이블 Full scan |
+
+#### 실행 계획 Extra
+| Extra | description |
+|-----------------|---------------------------------------------------------------|
+| Using Index | 커버링 index. Index로만 결과를 추출한 경우 |
+| Using Where | where 조건으로 데이터 추출 |
+| Using Filesort | 데이터 정렬이 필요한 경우 |
+| Using Temporary | 임시 테이블 사용. group by, order by 가 포함된 경우 주로 발생 |
+
 
 <br>
 
