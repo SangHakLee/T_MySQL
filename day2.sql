@@ -118,3 +118,13 @@ select * from my_internal;
 show indexes from my_internal;
 explain select * from my_internal where t_no = 1234; # type: All, index 사용 X, 성능 이슈 야기
 explain select * from my_internal where t_no = '1234'; # type: const
+
+
+
+use hr;
+explain
+select * from employees where last_name = 'King' and first_name = 'Steven'; # index 사용 O
+explain
+select * from employees where last_name = 'King' or first_name = 'Steven'; # index 사용 X
+
+
