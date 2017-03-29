@@ -366,6 +366,7 @@ select * from some_table;
 - **force index**
 	- index 강제 사용
 	- - ```... from employee force index(name_idx) ...```
+<br>
 
 ### Index 사용불가 Case
 1. `not` 연산자
@@ -403,3 +404,80 @@ explain
 # index 사용 X
 select * from employees where last_name = 'King' or first_name = 'Steven'; 
 ```
+<br>
+
+### 실습
+#### 문제
+`t_emp` 테이블 생성 **id: int, name: varchar(200), hire_date: varchar(8)**
+`employees` 테이블의 데이터를 `t_emp` 에 삽입
+`t_emp` hire_date index 생성
+`t_emp` 에서 hire_date 가 `19930113`, `'1993013'` 으로 각각 조회하고 실행계획 확인
+#### 결과
+- t_emp 테이블 생성
+```sql
+create table t_emp(
+	id int,
+    name varchar(200),
+    hire_date varchar(8)
+);
+```
+
+- t_emp 에 employees 데이터 삽입
+```sql
+insert into t_emp(id, name, hire_date) 
+select employee_id as id, concat(first_name, ', ', last_name) as name, replace(hire_date,'-','')  from employees;
+```
+
+- hire_date index 생성
+```sql
+create index hire_date_idx on t_emp(hire_date);
+```
+
+- 실행계획
+```sql
+explain
+select id, name, hire_date from t_emp where hire_date = 19930113;
+```
+![@19930113 으로 조회시 type ALL | day2-work1-explain int](https://cloud.githubusercontent.com/assets/9030565/24438270/253c59bc-1481-11e7-9b03-77ea5f4065c0.PNG)
+
+---
+
+```sql
+explain
+select id, name, hire_date from t_emp where hire_date = '19930113';
+```
+![@'19930113' 으로 조회시 type ref | day2-work1-explain varchar](https://cloud.githubusercontent.com/assets/9030565/24438294/570b3652-1481-11e7-886c-9ad68f53cd03.PNG)
+<br>
+
+### Index 설계
+#### Index 생성 적절한 경우
+- 전체 테이블의 10 ~15% 조회되는 경우
+- Index로만 조회시. 커버링 index
+- Join 시 연결되는 칼럼인 경우
+	- MySQL은 nested join 이기 때문에 연결 칼럼의 index 는 필수적
+
+#### Index 생성 적절하지 않은 경우
+- 단순 저장용 table
+- Full scan 경우
+- CUD 의 비율이 R 보다 현저히 높은 경우
+- 
+
+#### Selectivity(선택도)
+컬럼 내부의 저장되 데이터 값들의 종류와 전체 값의 비율
+
+#### 고려사항
+- select 시 where, group by, order by 에 쓰는 컬럼 위주로 선택
+- 선택도
+- 길이가 짧은 컬럼
+
+#### 통계 정보
+- Index의 통계정보를 update할 필요가 있다.
+- optimize table_name 명령어 사용
+	- 테이블 데이터와 index 를 재구조화
+	- 저장 공간 줄이고 I / O 효율 증가
+```sql
+optimize table employee;
+```
+- optimize 하는 경우
+	- 대용량 데이터를 CUD 한 경우
+	- FULLTEXT index를 CUD 한 경우
