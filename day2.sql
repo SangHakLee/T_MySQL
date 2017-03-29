@@ -128,3 +128,29 @@ explain
 select * from employees where last_name = 'King' or first_name = 'Steven'; # index 사용 X
 
 
+#실습
+use hr;
+create table t_emp(
+	id int,
+    name varchar(200),
+    hire_date varchar(8)
+);
+
+select * from t_emp;
+
+insert into t_emp(id, name, hire_date) select employee_id as id, concat(first_name, ', ', last_name) as name, replace(hire_date,'-','')  from employees;
+
+create index hire_date_idx on t_emp(hire_date);
+
+explain
+select id, name, hire_date from t_emp where hire_date = 19930113;
+
+explain
+select id, name, hire_date from t_emp where hire_date = '19930113';
+
+
+# 통계 정보
+use myhr;
+select * from information_schema.STATISTICS where TABLE_NAME = 'employees';
+
+optimize table employee;

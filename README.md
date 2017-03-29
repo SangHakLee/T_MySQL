@@ -455,20 +455,23 @@ select id, name, hire_date from t_emp where hire_date = '19930113';
 - Index로만 조회시. 커버링 index
 - Join 시 연결되는 칼럼인 경우
 	- MySQL은 nested join 이기 때문에 연결 칼럼의 index 는 필수적
+<br>
 
 #### Index 생성 적절하지 않은 경우
 - 단순 저장용 table
 - Full scan 경우
 - CUD 의 비율이 R 보다 현저히 높은 경우
-- 
+<br>
 
 #### Selectivity(선택도)
 컬럼 내부의 저장되 데이터 값들의 종류와 전체 값의 비율
+<br>
 
 #### 고려사항
 - select 시 where, group by, order by 에 쓰는 컬럼 위주로 선택
 - 선택도
 - 길이가 짧은 컬럼
+<br>
 
 #### 통계 정보
 - Index의 통계정보를 update할 필요가 있다.
@@ -481,3 +484,67 @@ optimize table employee;
 - optimize 하는 경우
 	- 대용량 데이터를 CUD 한 경우
 	- FULLTEXT index를 CUD 한 경우
+<br>
+
+## Join의 이해와 최적화
+###  Join 개요
+- 둘 이상의 테이블에 테이터를 연결하여 조회
+- 필요성 방법
+	- 테이블을 정규화하면 데이터 중복이 최소화 되지만 각 데이터가 흩어지게된다. 이 데이터를 다시 합치기 위해 join 필요
+	- 주로 `FK` 이용
+<br>
+
+#### Equi-Join
+- 조건이 `=` 인 경우
+```sql
+# 사원 성, 명, 급여, 입사일, 부서번호, 부서명 부서장명 출력
+select e.last_name, e.first_name, e.salary, e.salary, d.department_id, concat(m.last_name, ', ', m.first_name) as manager_name
+from employees e, departments d, employees m
+where e.department_id = d.department_id
+and d.manager_id = m.employee_id;
+```
+
+#### Non Equi-Join
+
+#### Outer Join
+- **Left outer join**
+	- 왼쪽 테이블에서 join 만족시키지 못하는 null 경우도 포함
+- **Right outer join**
+	- 오른쪽 테이블에서 null 포함
+- **Full outer join**
+	- 양쪽 모두 join 만족시키지 못하는 경우도 조회
+
+```sql
+# 사원 성,명,급여,입사일, 관지자 사번, 관리자 입사일 출력
+# 관리자 없는 경우 관리자 없음 출력
+select e.last_name, e.first_name, e.salary, e.hire_date, ifnull(m.employee_id, '관리자 없음') as '관리자 사번', ifnull(m.hire_date, '관리자 없음') as '관리자 입사일'
+from employees e
+left outer join employees m on e.manager_id = m.employee_id;
+```
+
+#### Self Join
+```sql
+# 자신의 관리자보다 많은 급여를 받는 사원을 조회
+select * from employees e join employees m on e.manager_id = m.employee_id
+where e.salary > m.salary;
+
+# 자신의 관리자보다 입사일이 빠른 사원을 조회
+select * from employees e join employees m on e.manager_id = m.employee_id
+where e.hire_date < m.hire_date;
+```
+
+### 실습
+#### 문제
+hr.employees
+도시명을 그 도시에 배치된 부서번호와 부서명도 함께 출력하시오.
+단, 배치된 부서가 없는 경우도 출력
+도시가 위치한 나라명도 함께 출력
+
+#### 결과
+```sql
+select l.city 도시명, d.department_id 부서, d.department_name 부서명, c.country_name 나라명 
+from locations l
+left join departments d on l.location_id = d.location_id
+join countries c on l.country_id = c.country_id;
+```
+
