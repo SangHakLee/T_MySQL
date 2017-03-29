@@ -1,0 +1,5 @@
+Extra,description
+Using Index,커버링 index. Index로만 결과를 추출한 경우
+Using Where,where 조건으로 데이터 추출
+Using Filesort,데이터 정렬이 필요한 경우
+Using Temporary,"임시 테이블 사용. group by, order by 가 포함된 경우 주로 발생"

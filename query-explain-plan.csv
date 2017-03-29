@@ -1,1 +1,12 @@
-
+item,contents
+id,select 번호
+select_type,select 종류
+table,참조 테이블 명
+type,조인이나 조회 종류
+possible_keys,사용가능한 index 목록
+key,사용된 index
+key_len,index 길이
+ref,key 와 함께 사용된 칼럼 혹은 상수 값
+rows,조회 행 수
+filtered,조회 예정행 추정비(조회행 수 / 전체행 수)
+Extra,추가 정보
