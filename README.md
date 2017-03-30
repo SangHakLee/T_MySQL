@@ -275,14 +275,14 @@ create index location_city_idx on locations(city);
 ### MySQL Index - InnoDB 스토리지 Index
 - InnoDB는 `Clustered Index` 와 `Secondary Index` 가 있다.
 - **Clustered Index**
-	- PK 시 자동으로 Clustered 생성
+	- PK 시 자동으로 `Clustered` 생성
 	- 데이터가 순서대로 정렬
-	- 테이블 당 하나의 Clustered Index
+	- 테이블 당 **하나**의 Clustered Index
 	- Unique, Not null 조건 부여시 Clustered Index 생성, PK가 있으면 Clustered Index는 생성되지 않는다. (테이블 다 하나이기 때문)
 	- 검색 속도 빠름. 입력, 수정, 삭제 느림
 - **Secondary Index**
 	- 입력, 수정, 삭제 빠름 
-	- 검색은 Clustered 에 비해 느림
+	- 검색은 `Clustered` 에 비해 느림
 	- 테이블에 여러개 생성 가능
 < br>
 
@@ -499,16 +499,16 @@ select id, name, hire_date from t_emp where hire_date = '19930113';
 
 ### Index 설계
 #### Index 생성 적절한 경우
-- 전체 테이블의 10 ~15% 조회되는 경우
-- Index로만 조회시. 커버링 index
+- 전체 테이블의 **10 ~15%** 조회되는 경우
+- Index로만 조회시. **커버링 index**
 - Join 시 연결되는 칼럼인 경우
-	- MySQL은 nested join 이기 때문에 연결 칼럼의 index 는 필수적
+	- MySQL은 nested join 이기 때문에 **연결 칼럼의 `index` 는 필수적**
 <br>
 
 #### Index 생성 적절하지 않은 경우
 - 단순 저장용 table
-- Full scan 경우
-- CUD 의 비율이 R 보다 현저히 높은 경우
+- `Full scan` 경우
+- `CUD` 의 비율이 `R` 보다 현저히 높은 경우
 <br>
 
 #### Selectivity(선택도)
@@ -516,7 +516,7 @@ select id, name, hire_date from t_emp where hire_date = '19930113';
 <br>
 
 #### 고려사항
-- select 시 where, group by, order by 에 쓰는 컬럼 위주로 선택
+- select 시 **where**, **group by**, **order by** 에 쓰는 컬럼 위주로 선택
 - 선택도
 - 길이가 짧은 컬럼
 <br>
@@ -529,9 +529,9 @@ select id, name, hire_date from t_emp where hire_date = '19930113';
 ```sql
 optimize table employee;
 ```
-- optimize 하는 경우
-	- 대용량 데이터를 CUD 한 경우
-	- FULLTEXT index를 CUD 한 경우
+- **optimize** 하는 경우
+	- 대용량 데이터를 `CUD` 한 경우
+	- FULLTEXT index를 `CUD` 한 경우
 
 <br>
 
@@ -557,9 +557,9 @@ and d.manager_id = m.employee_id;
 
 #### Outer Join
 - **Left outer join**
-	- 왼쪽 테이블에서 join 만족시키지 못하는 null 경우도 포함
+	- `왼쪽` 테이블에서 join 만족시키지 못하는 **null 경우도 포함**
 - **Right outer join**
-	- 오른쪽 테이블에서 null 포함
+	- `오른쪽` 테이블에서 **null 포함**
 - **Full outer join**
 	- 양쪽 모두 join 만족시키지 못하는 경우도 조회
 
@@ -603,7 +603,7 @@ join countries c on l.country_id = c.country_id;
 - **Nested Loop Join**
 	- 하나의 테이블을 기준으로 순차적으로 join
 - **Sort Merge Join**
-	- 양 테이블의 처리 범위를 access 해서 정렬한 결과를 합쳐서 Join
+	- 양 테이블의 처리 범위를 access 해서 정렬한 결과를 합쳐 join
 	- 배치 작업에 사용
 - **Hash Join**
 	- hash 함수 사용
@@ -616,10 +616,10 @@ join countries c on l.country_id = c.country_id;
 <br>
 
 ### Join 최적화 포인트
-- MySQL 은 Nested Loop 이기 때문에 기준 테이블이 중요하다
+- MySQL 은 `Nested Loop` 이기 때문에 기준 테이블이 중요하다
 	- 기준 테이블에서 조회되는 데이터양에 따라 연관 테이블의 데이터양이 결정되기 때문에 **기준 테이블(왼쪽)의 데이터양을 줄이는 것이 관건**
 - Outer join 은 지양한다. 꼭 필요한 경우만 쓴다.
-- join 시 조합 경우의 수를 줄이기 위해 복합 칼럼 index를 사용한다
+- join 시 조합 경우의 수를 줄이기 위해 **복합 칼럼 index**를 사용한다
 
 <br>
 
@@ -662,4 +662,117 @@ and et.to_date = (select max(to_date) from emp_salary where emp_no = e.emp_no);
 - **Scalar** 서브 쿼리
 	- 하나의 값만을 출력하는 서브 쿼리
 
+<br>
 
+### 서브 쿼리 최적화
+#### 인라인 뷰 서브 쿼리
+- Inline view 로 최소화 후 join 하는 것이 좋다
+```sql
+# p52 인라인 뷰의 사용으로 join 수 감소 
+
+# 일반 join -> 1:n
+#explain
+select d.department_id, d.department_name, avg(e.salary) dept_salary
+from employees e join departments d using(department_id)
+group by e.department_id;
+
+# 인라인 뷰 -> 1:1
+#explain
+select d.department_id, d.department_name, da.dept_salary
+from departments d join (
+	select department_id, avg(salary) dept_salary from employees group by department_id
+) da using(department_id);
+```
+사원 데이터 8만, 부서 100 이라고 가정하면,  **첫번째 쿼리**는 `8만 번의 join` 이 필요하고 **두번째 쿼리**는 `100 번의 join` 이 필요하다. ( 책 내용)
+
+**그러나,** 실행 계획은 아래와 같이 두번째 쿼리가 더 많은 실행 계획이 필요하다고 보여진다.
+
+![@첫번째 쿼리 | day3-inline-1](https://cloud.githubusercontent.com/assets/9030565/24482974/0b0dd4e4-1530-11e7-95c0-843fd6cb0bf5.PNG)
+
+
+![@두번째 쿼리 | day3-inline-2](https://cloud.githubusercontent.com/assets/9030565/24482979/15c91484-1530-11e7-81c5-f0174a646d5e.PNG)
+
+<br>
+
+#### 스칼라 서브 쿼리
+- 서브 쿼리 결과 집합이 **소량**일 때 사용
+- Join 을 많이 할 것으로 예상되는 경우 사용
+
+#### 상호 연관 서브 쿼리
+- 서브 쿼리 내에 메인 쿼리의 컬럼들이 사용됨
+- **매번 서브 쿼리가 사용됨**
+
+#### Nested 와 상호 연관 비교
+``` sql
+# 부서 평균보다 많은 급여 받는 사원 조회 (전체 사원은 10만)
+use hr;
+# 상호 연관 쿼리
+explain
+select * from employees e 
+where salary > ( 
+	# 수행 10만번. 동일 데이터 중복 접근
+	select avg(salary) from employees where department_id = e.department_id
+);
+
+# 인라인 뷰
+explain
+select * from employees e
+join (
+	# 10만건을 1번 Full Scan
+	select department_id, avg(salary) avg_salary from employees group by department_id
+) da using(department_id)
+where e.salary > da.avg_salary;
+```
+
+<br>
+
+### 서브 쿼리와 DCL & DML
+#### CREATE
+- create 에 서브 쿼리 사용하면 이미 존재하는 테이블에 필요한 데이터만 복사해서 테이블 생성 가능
+- 무결성 규칙은 복사되지 않는다. `Not Null`은 복사 됨
+
+#### INSERT
+- 이미 존재하는 테이블에서 필요한 데이터만 복사
+
+#### UPDATE
+- 다른 테이블의 값을 기반으로 테이블 행 **변경** 가능
+
+#### DELETE
+- 다른 테이블의 값을 기반으로 테이블 행 **삭제** 가능
+
+<br>
+
+### 서브 쿼리 활용
+#### IN & exists
+- MySQL **v5.5 이하**에선 `IN` 절에서 서브 쿼리를 비효율적으로 처리했다.
+	- v5.5 이전에선 메인 쿼리에서 조회된 각 row 에 대해 `in` 조건 내부의 서브 쿼리를 **매번 실행**
+	- v5.6 이후에선 서브쿼리를 메인 쿼리 이전에 **한번만 실행**하여 메인 쿼리와 비교하는 방식으로 실행
+
+##### IN & exists 비교 쿼리
+```sql
+# 부서장의 정보를 출력
+
+explain
+select * from employees e # exists 사용
+where exists ( select 'x' from departments where manager_id = e.employee_id);
+
+explain
+select * from employees e # in 사용
+where employee_id in ( select manager_id from departments);
+```
+
+###### IN 실행 계획
+| id | select_type | table | partitions | type | possible_keys | key | key_len | ref | rows | filtered | Extra |
+|----|--------------------|-------------|------------|------|---------------|------------|---------|------------------|------|----------|-------------|
+| 1 | PRIMARY | e | NULL | ALL | NULL | NULL | NULL | NULL | 107 | 100.00 | Using where |
+| 2 | DEPENDENT SUBQUERY | departments | NULL | ref | manager_id | manager_id | 5 | hr.e.employee_id | 2 | 100.00 | Using index |
+
+###### exists 실행 계획
+| id | select_type | table | partitions | type | possible_keys | key | key_len | ref | rows | filtered | Extra |
+|----|-------------|-------------|------------|--------|---------------|------------|---------|---------------------------|------|----------|-------------------------------------|
+| 1 | SIMPLE | departments | NULL | index | manager_id | manager_id | 5 | NULL | 27 | 44.44 | Using where; Using index; LooseScan |
+| 1 | SIMPLE | e | NULL | eq_ref | PRIMARY | PRIMARY | 4 | hr.departments.manager_id | 1 | 100.00 | NULL |
+
+<br>
+
+#### COALESCE() & IF()
