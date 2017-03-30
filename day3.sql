@@ -196,3 +196,108 @@ partition by range columns(joined_date) (
 show table status where name='my_member';
 
 select * from information_schema.PARTITIONS where table_name = 'my_member';
+
+
+
+# 실슬
+use myhr;
+
+create table partitioned_emp_salary
+select * from emp_salary; # 2844047 개
+
+select from_date from partitioned_emp_salary order by from_date;
+select DATE_FORMAT(from_date,'%Y-%m') m from partitioned_emp_salary group by m; # 월별 분류 시 212 개
+select DATE_FORMAT(from_date,'%Y') y from partitioned_emp_salary group by y; # 년별 분류 시 18 개
+select count(*), DATE_FORMAT(from_date,'%Y') y from partitioned_emp_salary group by y; # 년별 분류 시 각 행 수
+
+select min(from_date) from partitioned_emp_salary; # 1985-01-01
+select max(from_date) from partitioned_emp_salary; # 2002-08-01
+
+# 1년 단위 
+alter table partitioned_emp_salary partition by range(YEAR(from_date)) (
+	partition p1985 values less than(1985),
+    partition p1986 values less than(1986),
+    partition p1987 values less than(1987),
+	partition p1988 values less than(1988),
+    partition p1989 values less than(1989),
+    partition p1990 values less than(1990),
+    partition p1991 values less than(1991),
+    partition p1992 values less than(1992),
+    partition p1993 values less than(1993),
+    partition p1994 values less than(1994),
+    partition p1995 values less than(1995),
+    partition p1996 values less than(1996),
+    partition p1997 values less than(1997),
+    partition p1998 values less than(1998),
+    partition p1999 values less than(1999),
+    partition p2000 values less than(2000),
+    partition p2001 values less than(2001),
+    partition p2002 values less than(2002),
+    partition pmax values less than maxvalue
+);
+
+select PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_DESCRIPTION, TABLE_ROWS, AVG_ROW_LENGTH, DATA_LENGTH
+from information_schema.PARTITIONS where table_name = 'partitioned_emp_salary'; #파티션 주요 현황
+
+analyze table partitioned_emp_salary; # 통계 정보
+
+checksum table emp_salary, partitioned_emp_salary; # 체크 섬
+
+
+
+
+# SQL 활용 limit
+use myhr;
+select * from employee limit 100000, 15;
+
+
+# 부서별 월별 평균 급여 출력
+use hr;
+select department_id, employee_id, month(hire_date)
+from employees;
+
+select department_id, 
+	avg( if( month(hire_date)=1, salary, null) ) m01, 
+    avg( if( month(hire_date)=2, salary, null) ) m02,
+    avg( if( month(hire_date)=3, salary, null) ) m03,
+    avg( if( month(hire_date)=4, salary, null) ) m04,
+    avg( if( month(hire_date)=5, salary, null) ) m05,
+    avg( if( month(hire_date)=6, salary, null) ) m06,
+    avg( if( month(hire_date)=7, salary, null) ) m07,
+    avg( if( month(hire_date)=8, salary, null) ) m08,
+    avg( if( month(hire_date)=9, salary, null) ) m09,
+    avg( if( month(hire_date)=10, salary, null) ) m10,
+    avg( if( month(hire_date)=11, salary, null) ) m11,
+    avg( if( month(hire_date)=12, salary, null) ) m12
+from employees
+where department_id is not null
+group by department_id
+order by department_id;
+    
+
+
+# 사원의 급여 등급별 인원 수
+select 
+	case 
+		when salary <= 4000 then '초급'
+		when salary <= 7000 then '중급'
+        when salary <= 10000 then '고급'
+        else '특급'
+    end sal_grade,
+    count(*) 인원수
+from employees
+group by
+	case 
+		when salary <= 4000 then '초급'
+		when salary <= 7000 then '중급'
+        when salary <= 10000 then '고급'
+        else '특급'
+    end
+order by
+	case 
+		when salary <= 4000 then 1
+		when salary <= 7000 then 2
+        when salary <= 10000 then 3
+        else 4
+    end
+;

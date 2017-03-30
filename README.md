@@ -779,6 +779,9 @@ where employee_id in ( select manager_id from departments);
 <br>
 
 #### COALESCE() & IF()
+- 서브 쿼리 사용할 때, COALESCE() & IF() 함수를 이용하면 효율적인 쿼리 생성이 가능하다.
+
+<br>
 
 ### 실습
 #### 문제
@@ -1041,14 +1044,14 @@ select * from information_schema.PARTITIONS where table_name = 'my_member';
 
 ### 실습
 #### 문제
-emp_salary를 파티션으로 분할
-테이블 = partitioned_emp_salary
-from_date를 조사하여 파티션 수 정하기
-emp_salary에 저장된 데이터를 파티션으로 저장
-각 파티션에 저장된 row 수 현황 조회
-파티션 현황 조회 캡처
-통계 정보 생성 캡처
-두 테이블의 데이터 일치 여부 체크
+- emp_salary를 파티션으로 분할
+- 테이블 = partitioned_emp_salary
+- from_date를 조사하여 파티션 수 정하기
+- emp_salary에 저장된 데이터를 파티션으로 저장
+- 각 파티션에 저장된 row 수 현황 조회
+- 파티션 현황 조회 캡처
+- 통계 정보 생성 캡처
+- 두 테이블의 데이터 일치 여부 체크
 
 #### 결과
 ```sql
@@ -1099,4 +1102,60 @@ checksum table emp_salary, partitioned_emp_salary; # 체크 섬
 ![@파티션 결과 | day3-work1-parition-stats](https://cloud.githubusercontent.com/assets/9030565/24492157/5428337e-1565-11e7-8b65-3cc8610b415f.PNG)
 
 
+### SQL 활용
+#### Auto Increment
+- 테이블 row 는 PK 에 따라 클러스터화 된다.
+	- row 가 추가될 때마다 페이징 현상을 줄이는 것이 좋다
+	- PK를 임의의 값으로 하는 것은 좋지 않다.
+	- `int` 타입이 적절
+- 보조 index 는 PK 와 함께 저장
+	- `index(name)` 은 `index(name, id)` 와 동일
+	- PK 길이는 작을수록 좋다.
 
+#### INSERT ... ON DUPLICATE KEY UPDATE
+- `oracle`의 `merge` 처럼, **존재하면 update 없으면 insert**
+- 해당 기능을 application 단에서 수행하면 network 양이 증가하고 불필요한 로직이 늘어난다.
+- MySQL 에서는  `INSERT ... ON DUPLICATE KEY UPDATE` 로 해결
+
+#### Limit & Offset
+- `oracle`의 `Top N Query` 와 유사 
+
+#### COALESCE
+
+#### CASE
+```sql
+# 사원의 급여 등급별 인원 수
+select 
+	case 
+		when salary <= 4000 then '초급'
+		when salary <= 7000 then '중급'
+        when salary <= 10000 then '고급'
+        else '특급'
+    end sal_grade,
+    count(*) 인원수
+from employees
+group by
+	case 
+		when salary <= 4000 then '초급'
+		when salary <= 7000 then '중급'
+        when salary <= 10000 then '고급'
+        else '특급'
+    end
+order by
+	case 
+		when salary <= 4000 then 1
+		when salary <= 7000 then 2
+        when salary <= 10000 then 3
+        else 4
+    end
+;
+```
+
+#### 스토리지 엔진 특성 고려
+- MySQL 스토리지 엔진을 적재적소에 사용해야 한다
+- 트랜잭션이 필요할 땐, `InnoDB`
+	- `innodb-buffer-pool-size` 가 성능에 큰 영향을 미친다.
+- 원시 로그 데이터 저장시엔 `Archive` 스토리지가 적절
+	- 데이터가 압축된 상태로 저장
+	- 저장된 데이터는 `UD` 불가
+	- 파티션 지원
