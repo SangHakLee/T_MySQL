@@ -1,3 +1,4 @@
+
 # MySQL 쿼리 튜닝 최적화
 
 **Day 1**
@@ -664,6 +665,8 @@ and et.to_date = (select max(to_date) from emp_salary where emp_no = e.emp_no);
 
 <br>
 
+**day3**
+
 ### 서브 쿼리 최적화
 #### 인라인 뷰 서브 쿼리
 - Inline view 로 최소화 후 join 하는 것이 좋다
@@ -776,3 +779,324 @@ where employee_id in ( select manager_id from departments);
 <br>
 
 #### COALESCE() & IF()
+
+### 실습
+#### 문제
+부서(department_id), 직무(job_id) 별 지원수와 급여 총액 출력
+- 부서별/직무별,  천체 총 직원 수와 급여 총액 출력
+- 부서번호/ 직무번호 순 정렬 null 은 나중에
+
+<br>
+
+## MySQL 동시성 제어, 서버 튜닝, 파티션, SQL 활용
+
+### 동시성 제어
+- MySQL  은 Lock 과 트랜잭션으로 동시성을 제어
+- **MySQL Lock 매커니즘**
+	- 쓰레드가 데이터 집합을 요청할 때 Lock 설정
+	- 데이터 집합은 테이블, 행, 페이지, 메타데이타 
+	- 쓰레드가 데이터 집합 처리 완료하면 Lock 해제
+- **MySQL 트랜잭션**
+	- 신뢰성 있게 처리되는 일의 단위
+
+### Lock
+- **읽기 Lock**
+	- `R` 만 가능 `CUD` 불가
+- **쓰기 Lock**
+	- `CRUD` 불가
+
+#### Lock 종류
+- **Table Lock**
+	- **테이블 전체**에 Lock을 걸기 때문에 다른 트랜잭션이 해당 테이블에 접근 불가
+- **Row Lock**
+	- 하나 이상의 **개별적인 행**에 Lock
+	- Lock이 걸리지 않은 행에 접근 가능
+- **Page Lock**
+	- `BDB` 라는 스토리지 엔진에 적용.
+	- 거의 사용되지 않음
+- **Metadata Lock**
+	- 쓰레드가 테이블을 사용할 때 테이블의 모든 메타데이터에 Lock
+	- 메타테이터란, `DDL 에 의해 변경되는 정보`
+	
+
+#### 테이블 Lock
+- `MyISAM`  스토리지 엔진에서 사용
+- 스토리지 엔진과 무관하게 `LOCK TABLE` 명령으로 Lock 가능
+- **v5.5 이상**에서 `DDL` 실행 시 Lock 발생
+
+#### 행 Lock
+- 테이블 전체가 아닌 일부 행에 lock
+- `InnoDB` 는 행 lock
+```sql
+# 행 lock
+create table my_inno_t(
+	id int auto_increment primary key,
+    name varchar(10)
+);
+
+insert into my_inno_t(name) values('a');
+insert into my_inno_t(name) values('b');
+insert into my_inno_t(name) values('c');
+
+select * from my_inno_t;
+
+update my_inno_t set name = sleep(200) where id = 1; # 200초 걸림
+```
+
+다른 세션 열고 
+`select * from my_inno_t;` 하면 **가능**
+`update my_inno_t set name='aaa' where id=1;` 하면 **불가능** 행에 lock 이 걸려서
+
+<br>
+
+
+### 트랜잭션
+- MySQL 은 스토리지 엔지 레벨으로 트랜잭션
+	- ```select @@autocommit;``` 으로 트랜재션 사용 여부 확인
+- **MySQL 트랜잭션**
+	- ```start transaction;``` or ```begin;``` 으로 트랜잭션 시작
+	- ```commit;``` 으로 수행 완료
+	- ```rollback``` 으로 수행 취소
+
+<br>
+
+### 데드 Lock
+- 두 개 이상의 트랜잭션이 각기 `Lock`을 풀지 않고 서로의 `Lock`이 풀리길 기다리는 상황
+- **행 Lock** 을 사용하면 데드 Lock을 피할 수 없다.
+- InnoDB에는 데드 Lock 탐지기가 있다.
+
+<br>
+
+### 서버 튜닝
+#### 서버 튜닝의 이해
+- 만능 셋팅은 없다.
+- 스토리지 엔진을 적절히 선택하는 것이 중요
+- H/W OS 의 영향을 받는다.
+- **쿼리 튜닝이 최우선**
+
+#### 서버 옵션 방법
+- `my.ini` 설정
+	- **C:\ProgramData\MySQL\MySQL Server 5.7**
+	- **/etc/my.cnf** or **/etc/mysql/my.cnf**
+- 서버 실행 시 명령어 입력
+- 실행 중 세션이나 글로벌 변수 설정
+
+
+#### 설정 정보 확인
+- ```show status;```
+- ```show global status;```
+- ```show session status;```
+- ```show status like 'Key%';```
+
+<br>
+
+### 설정 파일
+- 서버가 기동될 때 `설정 파일`을 통해 MySQL 서버 셋팅
+- `my.ini` or `my.inf`
+- 서버 기동 중에도 `SET GLOBAL` 명령으로 변경 가능. **서버 재시작 하면 리셋됨**
+	- 변경 후, cmd(관리자)에서 `net stop MYSQL57` `net start MYSQL57` restart 명령어 없음
+
+
+#### my.ini
+- general-log=0
+	- 일반 로그는 남기지 않음
+- slow-query-log=1
+	- 느린 쿼리는 로그 남김
+- long_query_time=10
+	- 느린 쿼리는 10초 이상 걸리는 쿼리
+- **innodb_buffer_pool_size**
+	- 테이블, 인덱스 등을 저장하는 위한 공간
+	- **InnoDB 성능에 가장 중요**
+	- 테이블 데이터가 `pool` 에 `cache` 되면 **DB I/O 없이** 캐싱된 데이터에 접근할 수 있다
+	- [buffer_pool_size 계산 쿼리](http://www.dbrnd.com/2015/11/mysql-script-to-determine-the-size-of-innodb_buffer_pool_size/)
+- innodb_autoinc_lock_mode
+- innodb_lock_wait_timeout
+
+```sql
+# buffer_pool_size 계산 쿼리
+SELECT 
+	CEILING(Total_InnoDB_Bytes*1.6/POWER(1024,3)) AS RIBPS 
+FROM
+(
+	SELECT SUM(data_length+index_length) Total_InnoDB_Bytes
+	FROM information_schema.tables WHERE engine='InnoDB'
+) AS T;
+```
+
+<br>
+
+### 서버가 응답이 없는 경우
+```powershell
+mysqladmin ping -u root -p
+
+-> mysqld is alive
+```
+
+<br>
+
+### 로그
+- MySQL 은 기본적으로 `data` 폴더에 로깅
+	- **C:\ProgramData\MySQL\MySQL Server 5.7\Data**
+- 로그 기록은 `비활성화`가 디폴트
+- 로그 종류
+	- 에러
+	- 일반 쿼리
+	- 느린 쿼리
+	- DDL
+
+```sql
+# 로그 남기기 디폴트는 비활성화(0) 이기 때문에 다음과 같이 변경
+select @@general_log;
+set global general_log=1;
+```
+
+<br>
+
+### 테이블 유지보수
+#### analyze
+```sql
+analyze table table_name;
+```
+
+#### check
+```sql
+check table table_name;
+```
+
+#### checksum
+- 두 테이블의 내용이 일치하는지 확인
+```sql
+CHECKSUM TABLE table_name [, table_name ...]
+
+create table my_emp
+select * from employees;
+
+select * from my_emp;
+
+checksum table employees, my_emp;
+```
+
+#### optimize
+- 대량 데이터 `CUD` 후 index 재구축 과정
+```sql
+optimize table table_name;
+```
+
+<br>
+
+### 파티션
+- 물리적으로 여러 테이블로 구성되는 하나의 논리적 테이블
+- 이력 / 로그 데이터 테이블에 주로 사용
+- MySQL v5.0 부터 지원
+
+#### 파티션 장점
+- 메모리 적재에 너무 큰 테이블에 사용
+- 일반 테이블보다 관리 용이
+- 물리적 배포 용이, 여러 Disk 분산 배치 가능
+
+#### 파티션 단점
+- `FK` 사용 불가
+- `Full Text index` 불가
+- 하나의 테이블의 `1024`개 까지만 생성 가능
+
+#### 파티션 종류
+- **Range**
+	- 범위로 지정
+- **List**
+	- 파티션 key 값으로 key들의 목록 지정
+- **Hash**
+	- Range 와 List 로 분할하기 어려운 경우 Hash 함수 사용
+- **Key**
+	- Hash 와 동일 key 값 결정 가능
+- **Sub**
+	- 파티션 내부에 하위 파티션 생성 가능
+
+#### Range 파티션
+- 범위로 지정
+- 날짜 값을 기준으로 나눌 수 있는 데이터에 적합
+- Key 로 데이터를 검색할 때 유용
+```sql
+create table my_member(
+	first_name varchar(25) not null,
+    last_name varchar(25) not null,
+    email varchar(25) not null,
+    joined_date date
+)
+partition by range columns(joined_date) (
+	partition lessthan1990 values less than('1990-12-31'),
+    partition p2000 values less than('2000-12-31'),
+    partition p2020 values less than maxvalue
+);
+
+show table status where name='my_member';
+
+select * from information_schema.PARTITIONS where table_name = 'my_member';
+```
+
+#### List 파티션
+- Range 와 유사
+- Range 와 다른점은 순서대로 정렬될 필요는 없다.
+
+<br>
+
+### 실습
+#### 문제
+emp_salary를 파티션으로 분할
+테이블 = partitioned_emp_salary
+from_date를 조사하여 파티션 수 정하기
+emp_salary에 저장된 데이터를 파티션으로 저장
+각 파티션에 저장된 row 수 현황 조회
+파티션 현황 조회 캡처
+통계 정보 생성 캡처
+두 테이블의 데이터 일치 여부 체크
+
+#### 결과
+```sql
+use myhr;
+
+create table partitioned_emp_salary
+select * from emp_salary; # 2844047 개
+
+select from_date from partitioned_emp_salary order by from_date;
+select DATE_FORMAT(from_date,'%Y-%m') m from partitioned_emp_salary group by m; # 월별 분류 시 212 개
+select DATE_FORMAT(from_date,'%Y') y from partitioned_emp_salary group by y; # 년별 분류 시 18 개
+select count(*), DATE_FORMAT(from_date,'%Y') y from partitioned_emp_salary group by y; # 년별 분류 시 각 행 수
+
+select min(from_date) from partitioned_emp_salary; # 1985-01-01
+select max(from_date) from partitioned_emp_salary; # 2002-08-01
+
+# 1년 단위 
+alter table partitioned_emp_salary partition by range(YEAR(from_date)) (
+	partition p1985 values less than(1985),
+    partition p1986 values less than(1986),
+    partition p1987 values less than(1987),
+	partition p1988 values less than(1988),
+    partition p1989 values less than(1989),
+    partition p1990 values less than(1990),
+    partition p1991 values less than(1991),
+    partition p1992 values less than(1992),
+    partition p1993 values less than(1993),
+    partition p1994 values less than(1994),
+    partition p1995 values less than(1995),
+    partition p1996 values less than(1996),
+    partition p1997 values less than(1997),
+    partition p1998 values less than(1998),
+    partition p1999 values less than(1999),
+    partition p2000 values less than(2000),
+    partition p2001 values less than(2001),
+    partition p2002 values less than(2002),
+    partition pmax values less than maxvalue
+);
+
+select PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_DESCRIPTION, TABLE_ROWS, AVG_ROW_LENGTH, DATA_LENGTH
+from information_schema.PARTITIONS where table_name = 'partitioned_emp_salary'; #파티션 주요 현황
+
+analyze table partitioned_emp_salary; # 통계 정보
+
+checksum table emp_salary, partitioned_emp_salary; # 체크 섬
+```
+
+![@파티션 결과 | day3-work1-parition-stats](https://cloud.githubusercontent.com/assets/9030565/24492157/5428337e-1565-11e7-8b65-3cc8610b415f.PNG)
+
+
+
