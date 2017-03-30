@@ -160,3 +160,39 @@ FROM
 	SELECT SUM(data_length+index_length) Total_InnoDB_Bytes
 	FROM information_schema.tables WHERE engine='InnoDB'
 ) AS T;
+
+
+
+# 로그
+select @@general_log;
+set global general_log=1;
+select @@general_log;
+
+
+
+##checksum table
+create table my_emp
+select * from employees;
+
+select * from my_emp;
+
+checksum table employees, my_emp;
+
+
+
+# range 파티션
+create table my_member(
+	first_name varchar(25) not null,
+    last_name varchar(25) not null,
+    email varchar(25) not null,
+    joined_date date
+)
+partition by range columns(joined_date) (
+	partition lessthan1990 values less than('1990-12-31'),
+    partition p2000 values less than('2000-12-31'),
+    partition p2020 values less than maxvalue
+);
+
+show table status where name='my_member';
+
+select * from information_schema.PARTITIONS where table_name = 'my_member';
