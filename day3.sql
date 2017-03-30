@@ -102,3 +102,61 @@ where exists ( select 'x' from departments where manager_id = e.employee_id);
 explain
 select * from employees e # in 사용
 where employee_id in ( select manager_id from departments);
+
+
+
+
+
+
+# 행 lock
+create table my_inno_t(
+	id int auto_increment primary key,
+    name varchar(10)
+);
+
+insert into my_inno_t(name) values('a');
+insert into my_inno_t(name) values('b');
+insert into my_inno_t(name) values('c');
+
+select * from my_inno_t;
+
+update my_inno_t set name = sleep(200) where id = 1; # 200초 걸림
+
+
+
+select @@autocommit;
+
+
+
+begin;
+update my_inno_t set name='abc1' where id=1;
+select * from my_inno_t;
+commit;
+
+
+begin;
+insert into my_inno_t(name) values('444444444d');
+select * from my_inno_t;
+
+
+
+
+#설정 정보 확인
+show status;
+show global status;
+show session status;
+show status like 'Key%';
+show engine innodb status;
+
+
+select @@innodb_buffer_pool_size/1024/1024;
+
+
+
+SELECT 
+	CEILING(Total_InnoDB_Bytes*1.6/POWER(1024,3)) AS RIBPS 
+FROM
+(
+	SELECT SUM(data_length+index_length) Total_InnoDB_Bytes
+	FROM information_schema.tables WHERE engine='InnoDB'
+) AS T;
