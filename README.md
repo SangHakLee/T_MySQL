@@ -1,3 +1,141 @@
+<!-- toc orderedList:0 depthFrom:1 depthTo:6 -->
+* [MySQL 쿼리 튜닝 최적화](#mysql-쿼리-튜닝-최적화)
+	* [MySQL 개요](#mysql-개요)
+		* [MySQL 개요](#mysql-개요-1)
+		* [MySQL 특징](#mysql-특징)
+		* [MySQL Architecture](#mysql-architecture)
+			* [서버 엔진](#서버-엔진)
+			* [스토리지 엔진](#스토리지-엔진)
+				* [스토리지 엔진별 특징](#스토리지-엔진별-특징)
+		* [강의 내용](#강의-내용)
+			* [스키마 생성](#스키마-생성)
+			* [ERD 만들기](#erd-만들기)
+	* [MySQL 성능 향상, 쿼리 최적화, 실행 계획](#mysql-성능-향상-쿼리-최적화-실행-계획)
+		* [성능 향상](#성능-향상)
+			* [DB 성능은 I/O 작업에 가장 영향을 많이 받는다.](#db-성능은-io-작업에-가장-영향을-많이-받는다)
+			* [DB 성능](#db-성능)
+		* [SW 레벨](#sw-레벨)
+		* [HW 레벨](#hw-레벨)
+		* [쿼리 최적화](#쿼리-최적화)
+		* [프로파일링](#프로파일링)
+		* [실행 계획](#실행-계획)
+			* [실행 계획 상세](#실행-계획-상세)
+			* [실행 계획 select_type](#실행-계획-select_type)
+			* [실행 계획 type](#실행-계획-type)
+			* [실행 계획 Extra](#실행-계획-extra)
+		* [강의 내용](#강의-내용-1)
+		* [실습](#실습)
+			* [문제](#문제)
+			* [결과 SQL](#결과-sql)
+			* [실행 계획](#실행-계획-1)
+			* [locations 에 index 생성](#locations-에-index-생성)
+			* [index 생성 후 실행 계획](#index-생성-후-실행-계획)
+	* [Index 이해와 적용](#index-이해와-적용)
+		* [Index 개요](#index-개요)
+			* [기본 개념](#기본-개념)
+			* [장점](#장점)
+			* [단점](#단점)
+		* [Index 종류](#index-종류)
+			* [알고리즘 분류](#알고리즘-분류)
+			* [칼럼 분류](#칼럼-분류)
+		* [B-Tree](#b-tree)
+		* [MySQL Index](#mysql-index)
+		* [MySQL Index - InnoDB 스토리지 Index](#mysql-index-innodb-스토리지-index)
+		* [Index 명령어](#index-명령어)
+			* [생성](#생성)
+			* [조희](#조희)
+			* [삭제](#삭제)
+		* [Index 종류](#index-종류-1)
+			* [단일 컬럼 Index](#단일-컬럼-index)
+			* [복합 컬럼 Index](#복합-컬럼-index)
+			* [커버링 Index](#커버링-index)
+			* [Prefix Index](#prefix-index)
+				* [특징](#특징)
+				* [자동 생성 칼럼 (v5.7 이상)](#자동-생성-칼럼-v57-이상)
+		* [Index 힌트](#index-힌트)
+		* [Index 사용불가 Case](#index-사용불가-case)
+		* [실습](#실습-1)
+			* [문제](#문제-1)
+			* [결과](#결과)
+		* [Index 설계](#index-설계)
+			* [Index 생성 적절한 경우](#index-생성-적절한-경우)
+			* [Index 생성 적절하지 않은 경우](#index-생성-적절하지-않은-경우)
+			* [Selectivity(선택도)](#selectivity선택도)
+			* [고려사항](#고려사항)
+			* [통계 정보](#통계-정보)
+	* [Join의 이해와 최적화](#join의-이해와-최적화)
+		* [Join 개요](#join-개요)
+			* [Equi-Join](#equi-join)
+			* [Non Equi-Join](#non-equi-join)
+			* [Outer Join](#outer-join)
+			* [Self Join](#self-join)
+		* [실습](#실습-2)
+			* [문제](#문제-2)
+			* [결과](#결과-1)
+		* [Join 내부 알고리즘](#join-내부-알고리즘)
+		* [Join 최적화 포인트](#join-최적화-포인트)
+		* [실습](#실습-3)
+			* [문제](#문제-3)
+			* [결과](#결과-2)
+	* [서브 쿼리 튜닝 및 최적화](#서브-쿼리-튜닝-및-최적화)
+		* [서브 쿼리 - 기본 개념](#서브-쿼리-기본-개념)
+		* [서브 쿼리 최적화](#서브-쿼리-최적화)
+			* [인라인 뷰 서브 쿼리](#인라인-뷰-서브-쿼리)
+			* [스칼라 서브 쿼리](#스칼라-서브-쿼리)
+			* [상호 연관 서브 쿼리](#상호-연관-서브-쿼리)
+			* [Nested 와 상호 연관 비교](#nested-와-상호-연관-비교)
+		* [서브 쿼리와 DCL & DML](#서브-쿼리와-dcl-dml)
+			* [CREATE](#create)
+			* [INSERT](#insert)
+			* [UPDATE](#update)
+			* [DELETE](#delete)
+		* [서브 쿼리 활용](#서브-쿼리-활용)
+			* [IN & exists](#in-exists)
+				* [IN & exists 비교 쿼리](#in-exists-비교-쿼리)
+					* [IN 실행 계획](#in-실행-계획)
+					* [exists 실행 계획](#exists-실행-계획)
+			* [COALESCE() & IF()](#coalesce-if)
+		* [실습](#실습-4)
+			* [문제](#문제-4)
+	* [MySQL 동시성 제어, 서버 튜닝, 파티션, SQL 활용](#mysql-동시성-제어-서버-튜닝-파티션-sql-활용)
+		* [동시성 제어](#동시성-제어)
+		* [Lock](#lock)
+			* [Lock 종류](#lock-종류)
+			* [테이블 Lock](#테이블-lock)
+			* [행 Lock](#행-lock)
+		* [트랜잭션](#트랜잭션)
+		* [데드 Lock](#데드-lock)
+		* [서버 튜닝](#서버-튜닝)
+			* [서버 튜닝의 이해](#서버-튜닝의-이해)
+			* [서버 옵션 방법](#서버-옵션-방법)
+			* [설정 정보 확인](#설정-정보-확인)
+		* [설정 파일](#설정-파일)
+			* [my.ini](#myini)
+		* [서버가 응답이 없는 경우](#서버가-응답이-없는-경우)
+		* [로그](#로그)
+		* [테이블 유지보수](#테이블-유지보수)
+			* [analyze](#analyze)
+			* [check](#check)
+			* [checksum](#checksum)
+			* [optimize](#optimize)
+		* [파티션](#파티션)
+			* [파티션 장점](#파티션-장점)
+			* [파티션 단점](#파티션-단점)
+			* [파티션 종류](#파티션-종류)
+			* [Range 파티션](#range-파티션)
+			* [List 파티션](#list-파티션)
+		* [실습](#실습-5)
+			* [문제](#문제-5)
+			* [결과](#결과-3)
+		* [SQL 활용](#sql-활용)
+			* [Auto Increment](#auto-increment)
+			* [INSERT ... ON DUPLICATE KEY UPDATE](#insert-on-duplicate-key-update)
+			* [Limit & Offset](#limit-offset)
+			* [COALESCE](#coalesce)
+			* [CASE](#case)
+			* [스토리지 엔진 특성 고려](#스토리지-엔진-특성-고려)
+
+<!-- tocstop -->
 
 # MySQL 쿼리 튜닝 최적화
 
@@ -12,7 +150,7 @@
 
 ### MySQL 특징
 - 대용량 DB에 사용가능(테이블 기본 값은 `256TB`)
-- 하나의 테이블에 `64`개의 index 설정 가능. 
+- 하나의 테이블에 `64`개의 index 설정 가능.
 - 하나의 index에 `16`개의 칼럼 지정가능
 <br>
 
@@ -47,7 +185,7 @@ show engines;
 <br>
 
 ##### 스토리지 엔진별 특징
-- **MyISAM** 
+- **MyISAM**
 	- File 기반
 	- 디스크에 직접 접근, 메모리에 저장하지 않는다.
 	- 트랜잭션 X, 테이블 단위 Lock
@@ -61,7 +199,7 @@ show engines;
 	- 데이터 압축 저장
 <br>
 
-### 강의 내용 
+### 강의 내용
 
 #### 스키마 생성
 `hr-schema-mysql.sql` 의 내용을 실행해서 새로운 `hr` 스키마 생성 (복사 후 쿼리 실행)
@@ -94,7 +232,7 @@ Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 - 스토리지 엔진 선택
 - Lock 전략
 - 메모리 캐시량
-	- 캐시 메모리의 사이즈가 적절한지 확인 
+	- 캐시 메모리의 사이즈가 적절한지 확인
 <br>
 
 ### HW 레벨
@@ -182,7 +320,7 @@ Menu - Database - Reverse Enginner(Ctrl + R) - `hr` 선택
 
 <br>
 
-### 강의 내용 
+### 강의 내용
 ./day1.sql
 
 <br>
@@ -229,7 +367,7 @@ create index location_city_idx on locations(city);
 
 <br>
 
-## Index 이해와 적용 
+## Index 이해와 적용
 
 ### Index 개요
 #### 기본 개념
@@ -241,7 +379,7 @@ create index location_city_idx on locations(city);
 - 정렬 빠름
 #### 단점
 - Table 이외의 저장공간 필요
-- 데이터 변경시 index 도 변경되서 overhead 
+- 데이터 변경시 index 도 변경되서 overhead
 <br>
 
 ### Index 종류
@@ -282,7 +420,7 @@ create index location_city_idx on locations(city);
 	- Unique, Not null 조건 부여시 Clustered Index 생성, PK가 있으면 Clustered Index는 생성되지 않는다. (테이블 다 하나이기 때문)
 	- 검색 속도 빠름. 입력, 수정, 삭제 느림
 - **Secondary Index**
-	- 입력, 수정, 삭제 빠름 
+	- 입력, 수정, 삭제 빠름
 	- 검색은 `Clustered` 에 비해 느림
 	- 테이블에 여러개 생성 가능
 < br>
@@ -328,35 +466,35 @@ alter table table_name drop index index_name;
 - Unique Index, = 검색
 ```sql
 explain
-select last_name, first_name, salary, hire_date 
+select last_name, first_name, salary, hire_date
 from employees where employee_id = 100;
 ```
 
 - Unique Index, 범위
 ```sql
 explain
-select last_name, first_name, salary, hire_date 
+select last_name, first_name, salary, hire_date
 from employees where employee_id >= 100;
 ```
 
 - Non-Unique Index, = 검색
 ```sql
 explain
-select last_name, first_name, salary, hire_date 
+select last_name, first_name, salary, hire_date
 from employees where salary = 8000;
 ```
 
 - Non-Unique Index, 범위
 ```sql
 explain
-select last_name, first_name, salary, hire_date 
+select last_name, first_name, salary, hire_date
 from employees where salary between 8000 and 9000;
 ```
 
 - OR & IN 조건
 ```sql
 explain
-select last_name, first_name, salary, hire_date 
+select last_name, first_name, salary, hire_date
 from employees where employee_id in (100, 200);
 ```
 <br>
@@ -366,7 +504,7 @@ from employees where employee_id in (100, 200);
 alter table employees add index(last_name, first_name);
 
 explain
-select last_name, first_name, salary, hire_date 
+select last_name, first_name, salary, hire_date
 from employees where last_name like 'K%';
 ```
 <br>
@@ -432,7 +570,7 @@ select * from employees where salary >= (120000/12);
 4. 칼럼 타입이 자동 변형되는 경우
 ```sql
 create table my_internal(
-	t_no varchar(10) primary key, # PK를 varchar로 
+	t_no varchar(10) primary key, # PK를 varchar로
     t_name varchar(20)
 );
 
@@ -446,11 +584,11 @@ explain select * from my_internal where t_no = '1234'; # type: const
 ```sql
 # index 사용 O
 explain
-select * from employees where last_name = 'King' and first_name = 'Steven'; 
+select * from employees where last_name = 'King' and first_name = 'Steven';
 explain
 
 # index 사용 X
-select * from employees where last_name = 'King' or first_name = 'Steven'; 
+select * from employees where last_name = 'King' or first_name = 'Steven';
 ```
 <br>
 
@@ -472,7 +610,7 @@ create table t_emp(
 
 - t_emp 에 employees 데이터 삽입
 ```sql
-insert into t_emp(id, name, hire_date) 
+insert into t_emp(id, name, hire_date)
 select employee_id as id, concat(first_name, ', ', last_name) as name, replace(hire_date,'-','')  from employees;
 ```
 
@@ -592,7 +730,7 @@ hr.employees
 
 #### 결과
 ```sql
-select l.city 도시명, d.department_id 부서, d.department_name 부서명, c.country_name 나라명 
+select l.city 도시명, d.department_id 부서, d.department_name 부서명, c.country_name 나라명
 from locations l
 left join departments d on l.location_id = d.location_id
 join countries c on l.country_id = c.country_id;
@@ -637,7 +775,7 @@ employee 테이블을 먼저 조회
 use myhr;
 #explain
 select straight_join e.emp_no, e.last_name, e.first_name, e.hire_date, es.salary, et.title
-from employee e 
+from employee e
 left join emp_salary es using(emp_no)
 left join emp_title et using(emp_no)
 where e.emp_no between 100004 and 100014
@@ -671,7 +809,7 @@ and et.to_date = (select max(to_date) from emp_salary where emp_no = e.emp_no);
 #### 인라인 뷰 서브 쿼리
 - Inline view 로 최소화 후 join 하는 것이 좋다
 ```sql
-# p52 인라인 뷰의 사용으로 join 수 감소 
+# p52 인라인 뷰의 사용으로 join 수 감소
 
 # 일반 join -> 1:n
 #explain
@@ -711,8 +849,8 @@ from departments d join (
 use hr;
 # 상호 연관 쿼리
 explain
-select * from employees e 
-where salary > ( 
+select * from employees e
+where salary > (
 	# 수행 10만번. 동일 데이터 중복 접근
 	select avg(salary) from employees where department_id = e.department_id
 );
@@ -797,7 +935,7 @@ where employee_id in ( select manager_id from departments);
 - MySQL  은 Lock 과 트랜잭션으로 동시성을 제어
 - **MySQL Lock 매커니즘**
 	- 쓰레드가 데이터 집합을 요청할 때 Lock 설정
-	- 데이터 집합은 테이블, 행, 페이지, 메타데이타 
+	- 데이터 집합은 테이블, 행, 페이지, 메타데이타
 	- 쓰레드가 데이터 집합 처리 완료하면 Lock 해제
 - **MySQL 트랜잭션**
 	- 신뢰성 있게 처리되는 일의 단위
@@ -820,7 +958,7 @@ where employee_id in ( select manager_id from departments);
 - **Metadata Lock**
 	- 쓰레드가 테이블을 사용할 때 테이블의 모든 메타데이터에 Lock
 	- 메타테이터란, `DDL 에 의해 변경되는 정보`
-	
+
 
 #### 테이블 Lock
 - `MyISAM`  스토리지 엔진에서 사용
@@ -846,7 +984,7 @@ select * from my_inno_t;
 update my_inno_t set name = sleep(200) where id = 1; # 200초 걸림
 ```
 
-다른 세션 열고 
+다른 세션 열고
 `select * from my_inno_t;` 하면 **가능**
 `update my_inno_t set name='aaa' where id=1;` 하면 **불가능** 행에 lock 이 걸려서
 
@@ -917,8 +1055,8 @@ update my_inno_t set name = sleep(200) where id = 1; # 200초 걸림
 
 ```sql
 # buffer_pool_size 계산 쿼리
-SELECT 
-	CEILING(Total_InnoDB_Bytes*1.6/POWER(1024,3)) AS RIBPS 
+SELECT
+	CEILING(Total_InnoDB_Bytes*1.6/POWER(1024,3)) AS RIBPS
 FROM
 (
 	SELECT SUM(data_length+index_length) Total_InnoDB_Bytes
@@ -1068,7 +1206,7 @@ select count(*), DATE_FORMAT(from_date,'%Y') y from partitioned_emp_salary group
 select min(from_date) from partitioned_emp_salary; # 1985-01-01
 select max(from_date) from partitioned_emp_salary; # 2002-08-01
 
-# 1년 단위 
+# 1년 단위
 alter table partitioned_emp_salary partition by range(YEAR(from_date)) (
 	partition p1985 values less than(1985),
     partition p1986 values less than(1986),
@@ -1118,15 +1256,15 @@ checksum table emp_salary, partitioned_emp_salary; # 체크 섬
 - MySQL 에서는  `INSERT ... ON DUPLICATE KEY UPDATE` 로 해결
 
 #### Limit & Offset
-- `oracle`의 `Top N Query` 와 유사 
+- `oracle`의 `Top N Query` 와 유사
 
 #### COALESCE
 
 #### CASE
 ```sql
 # 사원의 급여 등급별 인원 수
-select 
-	case 
+select
+	case
 		when salary <= 4000 then '초급'
 		when salary <= 7000 then '중급'
         when salary <= 10000 then '고급'
@@ -1135,14 +1273,14 @@ select
     count(*) 인원수
 from employees
 group by
-	case 
+	case
 		when salary <= 4000 then '초급'
 		when salary <= 7000 then '중급'
         when salary <= 10000 then '고급'
         else '특급'
     end
 order by
-	case 
+	case
 		when salary <= 4000 then 1
 		when salary <= 7000 then 2
         when salary <= 10000 then 3
@@ -1159,3 +1297,6 @@ order by
 	- 데이터가 압축된 상태로 저장
 	- 저장된 데이터는 `UD` 불가
 	- 파티션 지원
+
+---
+Created by <leesanghak@gabia.com> 2017.03.31
